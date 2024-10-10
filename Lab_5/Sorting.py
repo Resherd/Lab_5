@@ -1,34 +1,51 @@
-import re
+import string
+import langdetect
 
-def sort_ukr_eng_words(words):
-    
-    ukr_words = [word for word in words if re.match(r'[а-щА-ЩЬьЮюЯяЇїІіЄєҐґ]', word)]
-    eng_words = [word for word in words if re.match(r'[a-zA-Z]', word)]
-    
-    ukr_words_sorted = sorted(ukr_words, key=lambda x: x.lower())
-    eng_words_sorted = sorted(eng_words, key=lambda x: x.lower())
-    
-    return ukr_words_sorted + eng_words_sorted
-
-def read_and_sort_file(filename):
+def read_first_sentence(file_path):
     try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            
+        with open(file_path, 'r', encoding='utf-8') as file:
             text = file.read()
-            
-            first_sentence = re.split(r'[.!?]', text)[0]
-            
-            words = re.findall(r'\b[а-яА-ЯёЁa-zA-Z]+\b', text)
-            
-            sorted_words = sort_ukr_eng_words(words)
-            
-            print(f"Перше речення: {first_sentence}")
-            print(f"Відсортовані слова: {sorted_words}")
-            print(f"Кількість слів: {len(sorted_words)}")
-            
-    except FileNotFoundError:
-        print(f"Помилка: файл {filename} не знайдено.")
-    except Exception as e:
-        print(f"Помилка: {e}")
+            # Знаходимо перше речення
+            first_sentence = text.split('.')[0]
+            print("Перше речення:", first_sentence)
 
-read_and_sort_file('text.txt')
+            # Видаляємо знаки пунктуації
+            text_cleaned = text.translate(str.maketrans('', '', string.punctuation))
+
+            # Розбиваємо на слова
+            words = text_cleaned.split()
+
+            # Розділяємо слова за мовами
+            ukrainian_words = []
+            english_words = []
+            other_words = []
+
+            for word in words:
+                try:
+                    lang = langdetect.detect(word)
+                    if lang == 'uk':
+                        ukrainian_words.append(word)
+                    elif lang == 'en':
+                        english_words.append(word)
+                    else:
+                        other_words.append(word)
+                except langdetect.lang_detect_exception.LangDetectException:
+                    pass  # Якщо неможливо визначити мову, пропускаємо слово
+
+
+            ukrainian_words_sorted = sorted(ukrainian_words, key=str.lower)
+            english_words_sorted = sorted(english_words, key=str.lower)
+            other_words_sorted = sorted(other_words, key=str.lower)
+            all = ukrainian_words_sorted + english_words_sorted + other_words_sorted
+
+            print("\nOthers слова (по алфавіту):", all)
+
+            print("\nКількість слів у тексті:", len(words))
+
+    except FileNotFoundError:
+        print(f"Файл {file_path} не знайдено.")
+    except Exception as e:
+        print(f"Сталася помилка при читанні файлу: {e}")
+
+file_path = 'C:\Users\bogda\PycharmProjects\Py\Lab_5\Text.txt'
+read_first_sentence(file_path)
